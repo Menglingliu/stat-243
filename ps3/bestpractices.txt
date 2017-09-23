@@ -1,0 +1,18 @@
+I read the third article "Best Practices for Scientific Computing".
+
+The paper described a set of useful computing practices that could be adopted in research settings.
+There are few points I found especially useful for my own coding practice.
+For example, in order to maintain an easily understandable code, the formatting should be consistent and the variable names should be meaningful 
+and distinctive. In my previous homework set, I named the variables in a sequential order and make them more descriptive so it's easier to read and for reference.
+I also usually add comments to the side describing my thought process for future reference. 
+The article also mentioned that programmers should work in small steps with frequent feedback and course correction. I think this is a very useful tip especially when creating
+more complex functions. I would code for one particular scenario first and make sure it runs smoothly and returns logical results.
+Then I will construct the function based on that one particular scenario and test it for several cases.
+I also agree with the defensive programming section mentioned in the article. Through the previous homework set, I learned how to use assert functions in R and also how to use 
+testthat package to test out the inputs of the function and makes sure that if the inputs are already wrong, then the program will stop which makes the debugging work easier.
+The automatic debugger such as test-driven development doesn't seem to be too appealing to me either as discussed in the article that the productivity is called into questioned 
+due to the backward methodology adopted when writing the code such that programmers write the test code first before writing the new code. I think it will be hard for me to brainstorm
+very effective testing scenarios before constructing the main body of the code.
+I think it is easier for the programmers to develop good coding habits such as good formatting, descriptive naming, defensive programming, incremental changes step by step. 
+However, I felt it will be harder for companies to implement workflow management tool, version control system or pair programming mechanisms for cost saving purposes and there will 
+usually be multiple parties involved therefore harder to coordinate. 
