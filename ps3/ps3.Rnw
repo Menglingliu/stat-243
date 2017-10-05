@@ -1,0 +1,546 @@
+\documentclass{article}
+
+\begin{document}
+\title{Stats243 Problem Set 3}
+\author{Mengling Liu}
+\date{Sept 2017}
+
+\maketitle
+Collaboration: I disscussed with Rui Chen for this homework set. 
+
+2.(a) Extract the plays into a character vector or a list, with one element for each play. 
+Skip the information at the start of the file, the first piece (the sonnets), and the last piece (Lover's Complaint).
+<<my-chunck2a,eval=TRUE>>=
+library(curl)
+filename <- "http://www.gutenberg.org/cache/epub/100/pg100.txt"
+# Read each line of the text file into a vector 
+plays <- readLines(filename)
+# Note that each play starts with a year and ends with "THE END"
+# Use regular expression to locate the start row and the 
+# end row of each play
+start <- grep('^1[[:digit:]]{3}$', plays)
+end <- grep('THE END', plays)
+# Rows in between the start row and end row will be the 
+# play content
+# Extract each play into a vector and compile all the plays 
+# into a list
+# Also will take out the first and the last piece
+compileplays <- list() 
+for (i in 1:(length(start)-2)) {
+   compileplays[[i]] <- plays[start[i+1]:end[i+1]]
+}
+
+@
+
+(b) Extract meta data about each play and extract the body of the play. The result should be in the
+form of an R object, with one element for each play. By meta data I mean the year of the play,
+the title, the number of acts, and the number of scenes.
+<<my-chunck2b,eval=TRUE>>=
+library(stringr)
+
+# Use funcion as a constructor to create a class called 
+# playinfo which contains fields such as year, title, 
+# actsnum, scenesum, and body
+# Pls note that the compiletext is a list created in 
+# part c which will return the speaker name and spoken 
+# chunks of each play
+# Will add the compiletext as a new field into the class
+
+playinfo <- function(year = NA, title = NA, actsnum = NA,
+                     scenesnum = NA, body = NA, 
+                     compiletext = NA){
+     obj <- list(year = year, title = title, actsnum = 
+     actsnum, scenesnum = scenesnum, body = body, 
+     compiletext = compiletext)
+     class(obj) <- 'playinfo'
+     return(obj)
+}
+
+# I created the fields for the first play first
+# For the 1st play, need to delete the empty lines first
+empty_lines <- grepl('^\\s*$', compileplays[[1]])
+compileplays[[1]] <- compileplays[[1]][! empty_lines]
+# Year is the first line of each play list
+year1 <- compileplays[[1]][1]
+# Title is the second line of each play list 
+title1 <- compileplays[[1]][2]
+# compileplays[[1]]
+# Use regular expression to locate ACT and count 
+# the number of Act
+acts1 <- str_extract(compileplays[[1]],
+                     'A(?i)(CT)\\s([MDCLXVIl]+|[0-9]+)')
+acts1 <- acts1[! is.na(acts1)]
+acts1 <- unique(acts1)
+actsnum1 <- length(acts1) 
+# Use regular expression to locate Scene and count 
+# the number of Scene
+scenes1 <- str_extract(compileplays[[1]], 
+                       'S(?i)(CENE)\\s([MDCLXVI]+|[0-9]+)')
+scenes1 <- scenes1[! is.na(scenes1)]
+scenesnum1 <- length(scenes1)
+# Extract the body of the play
+bodystart <- grep('S(?i)(CENE)', compileplays[[1]])
+body1 <- compileplays[[1]][(bodystart[1]):
+                             (length(compileplays[[1]])-1)]
+# Insert the info for each fields into the class 
+# for the first play
+playlist1 <- playinfo(year=year1, title=title1, 
+actsnum=actsnum1, scenesnum=scenesnum1, body=body1, 
+compiletext=NA )
+
+# Create a list called playlist which stores the info 
+# of each play as an element under the list
+# Loop over 36 plays to extract year, title, number 
+# of acts, number of scenes, body ad compiletext
+playlist <- list()
+for (i in 1:36){
+  empty_lines <- grepl('^\\s*$', compileplays[[i]])
+  compileplays[[i]] <- compileplays[[i]][! empty_lines]
+  year <- compileplays[[i]][1]
+  title <- compileplays[[i]][2]
+  acts <- str_extract(compileplays[[i]],
+                   'A(?i)(CT)\\s([MDCLXVIl]+|[0-9]+)')
+  acts <- acts[! is.na(acts)]
+  acts <- unique(acts)
+  actsnum <- length(acts)
+  scenes <- str_extract(compileplays[[i]], 
+                  'S(?i)(CENE)\\s([MDCLXVI]+|[0-9]+)')
+  scenes <- scenes[! is.na(scenes)]
+  scenesnum <- length(scenes)
+  bodystart <- grep('S(?i)CENE', compileplays[[i]])
+  body <- compileplays[[i]][(bodystart[1]):
+                          (length(compileplays[[i]])-1)]
+  playlist[[i]] <- playinfo(year=year, title=title, 
+    actsnum=actsnum, scenesnum=scenesnum, body=body, 
+    compiletext=NA)
+}
+
+
+@
+
+(c) Extract the actual text spoken by the characters into your object. You should store each chunk
+of spoken text and store the speaker of each chunk. Discard stage directions, Dramatis personae
+information, and scene information. Note that the stage directions come in many forms, with inconsistent
+formatting, so we're not expecting perfection here - you'll likely accidentally include
+a small number of stage directions as part of your spoken text.
+<<my-chunck2c,eval=TRUE>>=
+library(stringr)
+
+# For the 1st play, extract the speaker name from the play body
+# Then find the cooresponding rows forming the actual text spoken 
+# under each speaker
+# Indentation of 2 indicates the speaker name
+# Indentatio of 4 indicates the rest of the spoken words 
+bodystart <- grep('S(?i)CENE', compileplays[[1]])
+body <- compileplays[[1]][(bodystart[1]):
+                            (length(compileplays[[1]])-1)]
+speaker <- str_extract(body, '^(\\s){2}[A-Z]+')
+speaker <- speaker[!is.na(speaker)]
+# Use regular expression to locate the row number of each speaker
+speakertrue <- which(str_detect(body, '^(\\s){2}[A-Z]+'))
+# Create a text list, and insert the actual text under each speaker 
+# into the list
+text <- list()
+for (i in 1:(length(speakertrue)-1)){
+  text[[i]] <- body[(speakertrue[i]):(speakertrue[i+1]-1)]
+  text[[length(speakertrue)]] <- body[speakertrue
+                        [length(speakertrue)]:length(body)]
+}
+
+
+# Loop over all 36 plays to extract speaker name and actual text
+# compiletext here is a list of list that the first layer contains 
+# 36 plays and second layer contains the speaker and actual text 
+# under that play
+
+# Note that the 4th play, there is no space in front of speaker name
+# For spoken words, still 4 space of indentation
+# Below used if statment to change the regex to capture that
+
+# Note that the 17th play, there is 5 indenation for spoken words
+# But indentation for speaker name remains 2
+# Below used if statment to change the regex to capture spoken words
+
+compiletext <- list()
+for (j in 1:36){
+# Use the body from part b
+empty_lines <- grepl('^\\s*$', compileplays[[j]])
+compileplays[[j]] <- compileplays[[j]][! empty_lines]
+bodystart <- grep('S(?i)CENE', compileplays[[j]])
+body <- compileplays[[j]][(bodystart[1]):(length(compileplays[[j]])-1)]
+# Use if statement to locate the row number of speaker name 
+# and actual words spoken body for different scenarios
+if (! j == 4 && !j == 17 ) {
+  nametext<-grepl('(^\\s{2}[A-Za-z]+)|(^\\s{4}[A-Za-z]+)',body)
+  body <- body[nametext]
+  speakertrue <- which(str_detect(body, '^(\\s){2}[A-Z]+'))
+} else if( j==4 ) {
+  stage <- grepl('^<[A-Za-z]+', body)
+  body <-body[! stage]
+  speakertrue <- which(str_detect(body, '^(\\s)*[A-Z(\\s)]+\\.'))  
+} else if (j==17){
+  nametext<-grepl('(^\\s{2}[A-Za-z]+)|(^\\s{5}[A-Za-z]+)',body)
+  body <- body[nametext]
+  speakertrue <- which(str_detect(body, '^(\\s){2}[A-Z]+'))
+}
+# Combine the lines that falls under the speaker together 
+text <- list()
+for (i in 1:(length(speakertrue)-1)){
+  text[[i]] <- body[(speakertrue[i]):(speakertrue[i+1]-1)]
+  text[[length(speakertrue)]] <- body[speakertrue[length
+                                      (speakertrue)]:length(body)]
+}
+# Split out the speaker name from the spoken words and save to 
+# speakername under subtext, and save the spoken words to content
+# under subtext for each chunk
+# Then save the subtext to a new list called newtext which compiles
+# all the chunks for each play
+subtext <- list(speakername=NA, content=NA)
+newtext <- list()
+# use if statement to capture speaker name different for the 4th 
+# play and the rest 
+if(!j==4){
+for (a in 1:length(speakertrue)){
+  pattern <- str_extract(text[[a]], 
+                '^(\\s){2}(([A-Z(\\s)]+)|([A-Z][a-z]+))\\.')
+  subtext$speakername <- pattern[!is.na(pattern)]
+  subtext$content <- text[[a]]
+  newtext[[a]]<- subtext
+}
+}else{
+  for (a in 1:length(speakertrue)){
+  pattern <- str_extract(text[[a]], 
+                 '^(\\s)*(([A-Z(\\s)]+)|([A-Z][a-z]+))\\.')
+  subtext$speakername <- pattern[!is.na(pattern)]
+  subtext$content <- text[[a]]
+  newtext[[a]]<- subtext
+}
+}
+# Assign the newtext to compiletext which contains 36 plays 
+# as a list that contains list of all chunks for each play
+compiletext[[j]] <- newtext
+}
+# compiletext[[17]]
+
+## Insert this compiletext as a new field into the class object
+## created in part b of the problem
+## I copied the codes over again to make it clear
+playlist <- list()
+for (i in 1:36){
+  empty_lines <- grepl('^\\s*$', compileplays[[i]])
+  compileplays[[i]] <- compileplays[[i]][! empty_lines]
+  year <- compileplays[[i]][1]
+  title <- compileplays[[i]][2]
+  acts <- str_extract(compileplays[[1]],
+                    'A(?i)(CT)\\s([MDCLXVIl]+|[0-9]+)')
+  acts <- acts[! is.na(acts)]
+  acts <- unique(acts)
+  actsnum <- length(acts)
+  scenes <- str_extract(compileplays[[i]], 
+                    'S(?i)(CENE)\\s([MDCLXVI]+|[0-9]+)')
+  scenes <- scenes[! is.na(scenes)]
+  scenesnum <- length(scenes)
+  bodystart <- grep('S(?i)CENE', compileplays[[i]])
+  body <- compileplays[[i]][(bodystart[1]):(length
+                                      (compileplays[[i]])-1)]
+  
+  ###### Insert the compiletext field here. 
+  empty_lines <- grepl('^\\s*$', compileplays[[i]])
+  compileplays[[i]] <- compileplays[[i]][! empty_lines]
+  bodystart <- grep('S(?i)CENE', compileplays[[j]])
+  body <- compileplays[[i]][(bodystart[1]):(length
+                                      (compileplays[[i]])-1)]
+  if (! i == 4 && !i == 17 ) {
+    nametext<-grepl('(^\\s{2}[A-Za-z]+)|(^\\s{4}[A-Za-z]+)',body)
+    body <- body[nametext]
+    speakertrue <- which(str_detect(body, '^(\\s){2}[A-Z]+'))
+  } else if( i==4 ) {
+    stage <- grepl('^<[A-Za-z]+', body)
+    body <-body[! stage]
+    speakertrue <- which(str_detect(body, '^(\\s)*[A-Z(\\s)]+\\.'))  
+  } else if (i==17){
+    nametext<-grepl('(^\\s{2}[A-Za-z]+)|(^\\s{5}[A-Za-z]+)',body)
+    body <- body[nametext]
+    speakertrue <- which(str_detect(body, '^(\\s){2}[A-Z]+'))
+  }
+  text <- list()
+  for (q in 1:(length(speakertrue)-1)){
+    text[[q]] <- body[(speakertrue[q]):(speakertrue[q+1]-1)]
+    text[[length(speakertrue)]] <- body[speakertrue
+                                 [length(speakertrue)]:length(body)]
+  }
+  subtext <- list(speakername=NA, content=NA)
+  newtext <- list()
+  if(!i==4){
+  for (a in 1:length(speakertrue)){
+    pattern <- str_extract(text[[a]], 
+                        '^(\\s){2}(([A-Z(\\s)]+)|([A-Z][a-z]+))\\.')
+    subtext$speakername <- pattern[!is.na(pattern)]
+    subtext$content <- text[[a]]
+    newtext[[a]]<- subtext
+  }
+  }else{
+    for (a in 1:length(speakertrue)){
+    pattern <- str_extract(text[[a]], 
+                        '^(\\s)*(([A-Z(\\s)]+)|([A-Z][a-z]+))\\.')
+    subtext$speakername <- pattern[!is.na(pattern)]
+    subtext$content <- text[[a]]
+    newtext[[a]]<- subtext
+  }
+  }
+  ######
+  
+  # assign newtext here to compiletext filed
+  playlist[[i]] <- playinfo(year=year, title=title, actsnum=actsnum, 
+                  scenesnum=scenesnum, body=body, compiletext=newtext)
+}
+
+# Below gives the content of the first spoken word of the first play
+playlist[[1]]$compiletext[[1]]$content
+
+# Below gives the 1000th speaker name and content of the spoken word 
+# of the 17th play
+playlist[[17]]$compiletext[[1000]] 
+
+
+@
+
+(d) Now use the constructed data object to calculate summary statistics about each play. These
+should include the following:
+i. The number of unique speakers.
+ii. The number of spoken chunks.
+iii. The number of sentences and words spoken and average number of words per chunk.
+iv. The number of unique words.
+
+<<my-chunck2d,eval=TRUE>>=
+# i. the number of unique speakers
+# For the first play, write a lapply function get all 
+# the speaker names, and then count the unique names
+get_speakername <- function(x){
+  return(x$speakername)
+}
+speaker <- lapply(compiletext[[1]],get_speakername)
+speakeruni <- unique(speaker)
+speakernum <- length(speakeruni)
+
+# Looping over 36 plays to get the number of unique names 
+# for each play
+speakernum <- rep(0,36)
+for (i in 1:36) {
+speaker <- lapply(compiletext[[i]],get_speakername)
+speakeruni <- unique(speaker)
+speakernum[i] <- length(speakeruni)
+}
+# speakernum
+
+#----------------------------------------------------------------
+# ii.The number of spoken chunks.
+# For the first play, write a lapply function get all 
+# the spoken chunks, and then count the number of chunks
+get_chunks <- function(y){
+  return(y$content)
+}
+chunks <- lapply(compiletext[[1]],get_chunks)
+chunksnum <- length(chunks)
+
+# Looping over 36 plays to get the number of spoken chunks 
+# for each play
+chunksnum <- rep(0,36)
+for (i in 1:36) {
+chunks <- lapply(compiletext[[i]],get_chunks)
+chunksnum[i] <- length(chunks)
+}
+# chunksnum
+
+#---------------------------------------------------------------
+# iii. The number of sentences and words spoken and average 
+# number of words per chunk.
+
+# Number of sentences for each play ----------------------------
+# Get spoken chunks for the first play
+get_chunks <- function(y){
+  return(y$content)
+}
+chunks <- lapply(compiletext[[1]],get_chunks)
+# count the sentence number for each chunk
+sentence_count <- function(z){
+  count1 <- sum(str_count(z,'[\\.\\!\\?]'))
+  return(count1-1)
+}
+sentencecount <- lapply(chunks,sentence_count)
+# Sum over the sentence number for each chunk to get the sentence 
+# number for the first play
+sum_sentencecount <- sum(as.numeric(sentencecount))
+
+# Loop over 36 plays to get the number of sentences for each play
+sum_sentencecount <- rep(0,36)
+for (i in 1:36){
+chunks <- lapply(compiletext[[i]],get_chunks)
+sentencecount <- lapply(chunks,sentence_count)
+sum_sentencecount[i] <- sum(as.numeric(sentencecount))
+}
+# sum_sentencecount
+
+# Number of words spoken for each play -----------------------
+# Get speaker name and spoken chunks for the first play
+chunks <- lapply(compiletext[[1]],get_chunks)
+speaker <- lapply(compiletext[[1]],get_speakername)
+# count the words spoken for each chunk
+word_count <- function(w,x){
+  count2 <- sum(str_count(w,"[A-Za-z\\']+"))
+  count3 <- sum(str_count(x,"[A-Za-z\\']+"))
+  return(count2-count3)
+}
+wordcount <- mapply(word_count, chunks,speaker)
+# Sum over all the chunks to get the total word count 
+# for the first play
+sum_wordcount <- sum(as.numeric(wordcount))
+
+# loop over 36 plays to get the total word cout for 
+# all plays
+sum_wordcount <- rep(0,36)
+for (i in 1:36){
+chunks <- lapply(compiletext[[i]],get_chunks)
+speaker <- lapply(compiletext[[i]],get_speakername)
+wordcount <- mapply(word_count, chunks, speaker)
+sum_wordcount[i] <- sum(as.numeric(wordcount))
+}
+# sum_wordcount
+
+
+# Average number of words per chunk -----------------------------
+# Get speaker name and spoken chunks for the first play
+chunks <- lapply(compiletext[[1]],get_chunks)
+speaker <- lapply(compiletext[[1]],get_speakername)
+# count the words spoken for each chunk
+word_count <- function(w,x){
+  count2 <- sum(str_count(w,"[A-Za-z\\']+"))
+  count3 <- sum(str_count(x,"[A-Za-z\\']+"))
+  return(count2-count3)
+}
+wordcount <- mapply(word_count, chunks,speaker)
+# Take the average of all the chunks to get the average word count 
+# per chunk for the first play
+ave_wordcount <- mean(as.numeric(wordcount))
+
+# loop over 36 plays to get the average word cout per chunk
+# for all plays
+ave_wordcount <- rep(0,36)
+for (i in 1:36){
+chunks <- lapply(compiletext[[i]],get_chunks)
+speaker <- lapply(compiletext[[i]],get_speakername)
+wordcount <- mapply(word_count, chunks, speaker)
+ave_wordcount[i] <- mean(as.numeric(wordcount))
+}
+# ave_wordcount
+
+# Number of unique words per play -----------------------------
+# Get spoken chunks for the first play
+chunks <- lapply(compiletext[[1]],get_chunks)
+# extract all the single words for each chunk
+extract <- str_extract_all(chunks,"[A-Za-z\\']+")
+# Unlist the list to gather all words together 
+# in order to find the unique words per play
+uniqword <- length(unique(unlist(extract)))
+
+# Loop over the 36 plays to obtain the unique words per play
+uniqword <- rep(0,36)
+for (j in 1:36){
+chunks <- lapply(compiletext[[j]],get_chunks)
+extract <- str_extract_all(chunks,"[A-Za-z\\']+")
+uniqword[j] <- length(unique(unlist(extract)))
+}
+# uniqword
+
+@
+
+(e) Plot some of your summary statistics as a function of time to see if there are trends in Shakespeare's plays over the course of his writing career. Also in your solution, please report the number of acts and scenes, number of unique speakers, and number of chunks for each play;
+<<my-chunck2e,eval=TRUE>>=
+playyear <- rep(0,36)
+numofacts <- rep(0,36)
+numofscenes <- rep(0,36)
+for (i in 1:36){
+  playyear[i] <- playlist[[i]]$year
+  numofacts[i] <- playlist[[i]]$actsnum
+  numofscenes[i] <- playlist[[i]]$scenesnum
+}
+playyear # year of the play
+numofacts # number of acts for each play
+numofscenes # number of scenes for each play
+
+# More stats from part d
+speakernum # number of speakers per play
+chunksnum # number of chunks per play
+sum_sentencecount # total number of sentences per play
+ave_wordcount # average number of spoken words per play
+uniqword # number of unique words per play
+
+# Create a new data frame with all the data points above
+playstats <- cbind(playyear,numofacts,numofscenes,speakernum,
+     chunksnum,sum_sentencecount, ave_wordcount, uniqword)
+playstats
+
+p1 <- plot(playstats[,1], playstats[,2], xlab="Year", 
+      ylab="Number of acts", main="The plot between year 
+      and number of acts per play")
+
+p2 <- plot(playstats[,1], playstats[,3], xlab="Year", 
+      ylab="Number of scenes", main="The plot between year 
+      and number of scenes per play")
+
+p3 <- plot(playstats[,1], playstats[,4], xlab="Year", 
+      ylab="Number of speakers", main="The plot between year 
+      and number of speakers per play")
+
+p4 <- plot(playstats[,1], playstats[,5], xlab="Year", 
+      ylab="Number of spoken chunks", main="The plot between 
+      year and number of spoken chunks per play")
+
+p5 <- plot(playstats[,1], playstats[,6], xlab="Year", 
+      ylab="Total number of sentences", main="The plot between 
+      year and total number of sentences per play")
+
+p6 <- plot(playstats[,1], playstats[,7], xlab="Year", 
+      ylab="Average number of words", main="The plot between year 
+      and average number of words per play")
+
+p7 <- plot(playstats[,1], playstats[,8], xlab="Year", 
+           ylab="Number of unique words", main="The plot between year 
+           and number of unique words per play")
+
+@
+
+3(a) What are the fields (i.e., member data, slots, etc.) for the class? Describe the kind of variable of each field (e.g., it might be a named numeric vector, or an unnamed list). You might decide to have a field contain an object of yet another class that you should describe.
+
+I created a class in part b with fields such as year, title, number of acts, number of scenes,  body of the play and compiletext which contains the speaker name and spoken words for each play.
+Each field represents a feature of the play. The data type of variables of each play are as follows:
+year: character string  
+title:  character string
+number of acts (actsnum): integer
+number of scenes (scenesnum): integer
+body: character string
+compiletext: list contianing character string
+We can consider the field compiletext contains object of another class which includes two fields: the speaker name and spoken words for each play. Both of speaker name and spoken words are character strings. 
+
+(b)
+What are the methods for the class? Some of the methods should relate to processing the text of
+the plays to produce the fields and other methods should relate to providing information to a user
+who wants to know something about a play or see the text of the play. Indicate very briefly what
+the method does, and any input arguments to each method, fields that are created or modified by
+the method, and any output that is produced.
+
+Processing the text: We can define a method to return the average number of words spoken by a specific speaker for each play. Input of the method is the title of the play and name of the speaker, of which both are string characters. The output would be the average number of words spoken by that speaker. So for each play, we need to select all the chunks spoken by that specific speaker and count the word number in each chunk to obtian the average word counts for that specific speaker. Output will be an integer. The method can be defined as 
+\texttt{ave\_wordcount\_by\_speaker}(x,y)
+
+Provide information: We can create a search method to query the information on Shakespear's works based on the play titles. Input is Shakespear's work titles which are character strings. The method should return the year of the work, number of acts, number of scenes and the body of the play.
+Year and number of acts/scenes are integers and the body of the play is character string. The method can be defined as \texttt{search\_info}(x)
+
+Also the statistics we calculated in part 2d can be turned into methods too:
+Calculating the number of speakers per play can be turned into a method, where the input is play title and the output is the number of speakers of that play. 
+Calculating the number of chunks per play can be turned into a method, where the input is the play title and the output is the number of chunks of that play.
+Calculating the total number of sentences per play can be turned into a method, where the input is the play title and the output is the number of sentences of that play.
+Calculating average spoken words per play can be turned into a method, where the input is the play title and the outout is the average number of spoken words of that play.
+Calculating the number of unique words can be turned into a method too, where the input is the play title and the output is the number of unique words of that play.
+
+
+\end{document}
