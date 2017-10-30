@@ -1,0 +1,35 @@
+What are the goals of their simulation study and what are the metrics that they consider in assessing their method?
+
+Simulation studies were conducted to investigate the finite sample properties of the test. The paper studies the Gaussian mixture distributions. 
+Power is the metric that they consider in assessing their method.
+
+
+What choices did the authors have to make in designing their simulation study? What are the key aspects of the data generating mechanism that likely affect the statistical power of the test? Are there data-generating scenarios that the authors did not consider that would be useful to consider?
+
+There are two choices the author: 
+1. the null hypothesis that a random sample has been drawn from a normal distribution
+2. the null hypothesis that a random sample has been drawn from a mixture of two normal distribution
+The key aspects of the data generating mechanism are spacing between the components(D:(mu1-mu2)/sigma) indicates how far apart these two distributions from each other), sample sizes, and mixing proportion(how much comes from each distributions). 
+I think the number of components, number of replications,and the adjusting LR also contributes to statistical power.
+
+
+Do their tables do a good job of presenting the simulation results and do you have any alternative suggestions for how to do this?
+Yes. The tables did a great job presenting the simulation results controlling each variable. It would be easier to read if split the tables to smaller ones each with fewer changing variables.
+
+Interpret their tables on power (Tables 2 and 4) - do the results make sense in terms of how the power varies as a function of the data generating mechanism?
+For different value of mixing proportion, sample size and distance spacing, calculate the simulated powers associated with 0.01 and 0.05 nominal level for both adjusted data and unadjusted data. 
+Yes the results make sense in terms of how the power varies as a function of the data generating mechanism.
+Table 2: When D is larger than 1, Power will increase as the sample size increases. There is no strong evidence that the value of power depends on mixing proportion. Also power increases as D increases.
+         i.e.1.8 in table 2: Draw the data from alternative distribution, and calculate the test statistics (2LR*) under null to see whether we should reject null, and we draw 1000 times, 18 out of the 1000 simulations produced a test statistics that null hypothesis could be rejected.
+         When D increases, the probablity of rejecting null hypothesis that its a single normal gets higher, which is in line with our intuition.
+Table 4: When D1 and D2 both larger than 1, power will increase as sample size increases. When D1 and D2 both larger than 1, the power will increases as D increases. 
+Table 1: draw data from null and simulate the smapling distribution and whether will match the significance level
+
+How do you think the authors decided to use 1000 simulations. Would 10 simulations be enough? How might we decide if 1000 simulations is enough?
+I don't think 10 simulations is enough. A larger simulation number will contribute to a value of power thats closer to the true value. 
+But the number is also limited by the computational power. 
+
+
+Critiques abour simulation:
+Benefits: control, easy to generate data, finite results are hard(analytical results may be hard)
+Cons: exhaustive search over parameters, the computational power
