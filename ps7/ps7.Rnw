@@ -1,0 +1,42 @@
+\documentclass{article}
+\usepackage[margin=0.8in]{geometry}
+
+\begin{document}
+\title{Stats243 Problem Set 7}
+\author{Mengling Liu}
+\date{Nov 2017}
+
+\maketitle
+Collaboration: I disscussed with Rui Chen and Fan Dong for this homework set. 
+
+4. 
+<<my-chunck1,eval=TRUE>>=
+
+beta_hat <- function(A,X,Y,b){
+  R <- qr.R(qr(X))
+  Q <- qr.Q(qr(X))
+  R1 <- qr.R(qr(t(A%*%solve(R))))
+  backsolve(R, backsolve(R, crossprod(X,Y)+t(A) %*% 
+                           backsolve(R1,backsolve(R1,-A%*%backsolve(R, crossprod(Q,Y))+b, 
+                                                  transpose = T)),transpose = T))
+}
+
+m <- 1000
+n<-1000
+p <- 1000
+A <- matrix(rnorm(m*p), nrow = m)
+X <- matrix(rnorm(n*p), nrow = n)
+Y <- rnorm(n)
+b <- rnorm(m)
+d <- t(X)%*%Y
+C <- crossprod(X)
+
+system.time(solve(C)%*%d + solve(C)%*%t(A)%*%solve(A%*%solve(C)%*%t(A))%*%(-A%*%(solve(C)%*%d)+b))
+system.time(beta_hat(A,X,Y,b))
+
+
+
+@
+
+
+\end{document}
